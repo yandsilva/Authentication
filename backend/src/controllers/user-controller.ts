@@ -1,21 +1,28 @@
-import { Request, Response } from "express";
-import { UsersServices } from "../services/user-service.js";
+import { Request, Response, NextFunction } from "express";
+import { AuthRequest } from "../middleware/auth-middleware.js";
+import * as userService from "../services/user-service.js";
 
-export class UsersController {
-  async register(req: Request, res: Response) {
-    const { name, email, password } = req.body;
-
-    const usersServices = new UsersServices();
-    const response = await usersServices.register({
-      name,
-      email,
-      password,
-    });
-
-    return res.json({
-      success: true,
-      message: "Usuario Criado com Sucesso",
-      response,
-    });
+export const me = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const user = await userService.getUserById(userId);
+    res.json({ user });
+  } catch (error) {
+    next(error);
   }
-}
+};
+
+export const list = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const take = Number(req.query.take || 10);
+    const skip = Number(req.query.skip || 0);
+    const users = await userService.listUsers(take, skip);
+    res.json({ users });
+  } catch (error) {
+    next(error);
+  }
+};
